@@ -14,7 +14,7 @@ import static io.cucumber.junit.platform.engine.Constants.PLUGIN_PROPERTY_NAME;
 @ConfigurationParameter(key = GLUE_PROPERTY_NAME, value = "org.nahulemes.pom.tests")
 @ConfigurationParameter(
         key = PLUGIN_PROPERTY_NAME,
-        value = "pretty,io.cucumber.core.plugin.SerenityReporterParallel"
+        value = "pretty,net.serenitybdd.cucumber.core.plugin.SerenityReporterParallel"
 )
 public class CucumberTestSuite {
 }
