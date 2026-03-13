@@ -42,7 +42,7 @@ src/test/resources
 ./gradlew clean test aggregate
 ```
 
-### 2) Ejecutar en modo headless (recomendado para CI/local sin UI)
+### 2) Ejecutar en modo headless (recomendado para local sin UI)
 
 ```bash
 ./gradlew clean test aggregate \
@@ -67,18 +67,6 @@ Feature:
 Runner:
 
 - `src/test/java/org/nahulemes/pom/runners/CucumberTestSuite.java`
-
-## Integración continua
-
-Existe un workflow en GitHub Actions:
-
-- `.github/workflows/ci.yml`
-
-El pipeline:
-
-- Levanta infraestructura (`equipo-6-uruguay/infra`) con Docker Compose.
-- Espera disponibilidad del AUT en `http://localhost:3000`.
-- Ejecuta pruebas E2E y publica artefactos con reportes.
 
 ## Nota importante
 
