@@ -34,19 +34,23 @@ jobs:
         uses: browser-actions/setup-chrome@v2
         with:
           chrome-version: stable
-          install-chromedriver: true
+          install-chromedriver: false
           install-dependencies: true
 
-      - name: Show browser versions
+      - name: Export Chrome binary for Serenity/Selenium
+        run: |
+          echo "CHROME_BIN=${{ steps.setup-chrome.outputs.chrome-path }}" >> "$GITHUB_ENV"
+          echo "GOOGLE_CHROME_BIN=${{ steps.setup-chrome.outputs.chrome-path }}" >> "$GITHUB_ENV"
+          echo "${{ steps.setup-chrome.outputs.chrome-path }}" | xargs dirname >> "$GITHUB_PATH"
+
+      - name: Show browser version
         run: |
           echo "Chrome path: ${{ steps.setup-chrome.outputs.chrome-path }}"
-          echo "ChromeDriver path: ${{ steps.setup-chrome.outputs.chromedriver-path }}"
           "${{ steps.setup-chrome.outputs.chrome-path }}" --version
-          "${{ steps.setup-chrome.outputs.chromedriver-path }}" --version
 
       - name: Smoke test Chrome headless
         run: |
-          "${{ steps.setup-chrome.outputs.chrome-path }}" \
+          "$CHROME_BIN" \
             --headless=new \
             --no-sandbox \
             --disable-dev-shm-usage \
@@ -76,14 +80,9 @@ jobs:
           exit 1
 
       - name: Run E2E tests
-        env:
-          CHROME_BIN: ${{ steps.setup-chrome.outputs.chrome-path }}
-          GOOGLE_CHROME_BIN: ${{ steps.setup-chrome.outputs.chrome-path }}
         run: |
           ./gradlew clean test aggregate \
             -Dwebdriver.driver=chrome \
-            -Dwebdriver.chrome.driver="${{ steps.setup-chrome.outputs.chromedriver-path }}" \
-            -Dchrome.binary="${{ steps.setup-chrome.outputs.chrome-path }}" \
             -Dheadless.mode=true \
             -Dchrome.switches="--headless=new,--no-sandbox,--disable-dev-shm-usage,--disable-gpu,--window-size=1920,1080" \
             -Dwebdriver.base.url=http://localhost:3000 \
