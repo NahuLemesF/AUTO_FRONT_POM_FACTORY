@@ -1,9 +1,9 @@
 package org.nahulemes.pom.pages;
 
-import net.thucydides.core.annotations.DefaultUrl;
 import org.nahulemes.pom.base.BasePage;
 import org.openqa.selenium.support.FindBy;
 import net.serenitybdd.core.pages.WebElementFacade;
+import net.serenitybdd.annotations.DefaultUrl;
 
 @DefaultUrl("http://localhost:3000/")
 public class LoginPage extends BasePage {

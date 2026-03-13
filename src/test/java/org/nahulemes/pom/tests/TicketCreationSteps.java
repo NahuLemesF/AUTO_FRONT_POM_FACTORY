@@ -1,6 +1,6 @@
 package org.nahulemes.pom.tests;
 
-import net.thucydides.core.annotations.Step;
+import net.serenitybdd.annotations.Step;
 import net.thucydides.core.steps.ScenarioSteps;
 import org.nahulemes.pom.pages.LoginPage;
 import org.nahulemes.pom.pages.TicketFormPage;
