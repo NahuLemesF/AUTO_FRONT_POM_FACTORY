@@ -29,16 +29,25 @@ jobs:
           java-version: "17"
           cache: gradle
 
-      - name: Install Google Chrome
+      - name: Install Google Chrome + matching ChromeDriver
         id: setup-chrome
-        uses: browser-actions/setup-chrome@v1
+        uses: browser-actions/setup-chrome@v2
         with:
           chrome-version: stable
+          install-chromedriver: true
+
+      - name: Show browser versions
+        run: |
+          echo "Chrome: ${{ steps.setup-chrome.outputs.chrome-version }}"
+          echo "Chrome path: ${{ steps.setup-chrome.outputs.chrome-path }}"
+          echo "ChromeDriver: ${{ steps.setup-chrome.outputs.chromedriver-version }}"
+          echo "ChromeDriver path: ${{ steps.setup-chrome.outputs.chromedriver-path }}"
+          "${{ steps.setup-chrome.outputs.chrome-path }}" --version
+          "${{ steps.setup-chrome.outputs.chromedriver-path }}" --version
 
       - name: Prepare infra environment
         working-directory: infra
-        run: |
-          cp .env.example .env
+        run: cp .env.example .env
 
       - name: Start application with Docker Compose
         working-directory: infra
@@ -61,7 +70,12 @@ jobs:
         env:
           CHROME_BIN: ${{ steps.setup-chrome.outputs.chrome-path }}
           GOOGLE_CHROME_BIN: ${{ steps.setup-chrome.outputs.chrome-path }}
-        run: ./gradlew clean test aggregate -Dwebdriver.driver=chrome -Dheadless.mode=true -Dwebdriver.base.url=http://localhost:3000
+        run: |
+          ./gradlew clean test aggregate \
+            -Dwebdriver.driver=chrome \
+            -Dwebdriver.chrome.driver="${{ steps.setup-chrome.outputs.chromedriver-path }}" \
+            -Dheadless.mode=true \
+            -Dapp.base.url=http://localhost:3000
 
       - name: Upload Serenity report
         if: always()
