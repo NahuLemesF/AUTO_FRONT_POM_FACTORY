@@ -35,15 +35,24 @@ jobs:
         with:
           chrome-version: stable
           install-chromedriver: true
+          install-dependencies: true
 
       - name: Show browser versions
         run: |
-          echo "Chrome: ${{ steps.setup-chrome.outputs.chrome-version }}"
           echo "Chrome path: ${{ steps.setup-chrome.outputs.chrome-path }}"
-          echo "ChromeDriver: ${{ steps.setup-chrome.outputs.chromedriver-version }}"
           echo "ChromeDriver path: ${{ steps.setup-chrome.outputs.chromedriver-path }}"
           "${{ steps.setup-chrome.outputs.chrome-path }}" --version
           "${{ steps.setup-chrome.outputs.chromedriver-path }}" --version
+
+      - name: Smoke test Chrome headless
+        run: |
+          "${{ steps.setup-chrome.outputs.chrome-path }}" \
+            --headless=new \
+            --no-sandbox \
+            --disable-dev-shm-usage \
+            --disable-gpu \
+            --window-size=1920,1080 \
+            --dump-dom about:blank
 
       - name: Prepare infra environment
         working-directory: infra
@@ -74,8 +83,11 @@ jobs:
           ./gradlew clean test aggregate \
             -Dwebdriver.driver=chrome \
             -Dwebdriver.chrome.driver="${{ steps.setup-chrome.outputs.chromedriver-path }}" \
+            -Dchrome.binary="${{ steps.setup-chrome.outputs.chrome-path }}" \
             -Dheadless.mode=true \
-            -Dapp.base.url=http://localhost:3000
+            -Dchrome.switches="--headless=new,--no-sandbox,--disable-dev-shm-usage,--disable-gpu,--window-size=1920,1080" \
+            -Dwebdriver.base.url=http://localhost:3000 \
+            --stacktrace --info
 
       - name: Upload Serenity report
         if: always()
@@ -83,6 +95,14 @@ jobs:
         with:
           name: serenity-report
           path: target/site/serenity
+          if-no-files-found: warn
+
+      - name: Upload Gradle test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gradle-test-report
+          path: build/reports/tests/test
           if-no-files-found: warn
 
       - name: Stop Docker Compose services
