@@ -29,6 +29,27 @@ jobs:
           java-version: "17"
           cache: gradle
 
+      - name: Install Google Chrome
+        id: setup-chrome
+        uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: stable
+
+      - name: Install matching ChromeDriver
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y unzip
+          CHROME_VERSION=$("${{ steps.setup-chrome.outputs.chrome-path }}" --version | awk '{print $3}')
+          CHROME_MAJOR="${CHROME_VERSION%%.*}"
+          DRIVER_VERSION=$(curl -fsSL "https://googlechromelabs.github.io/chrome-for-testing/LATEST_RELEASE_${CHROME_MAJOR}")
+          curl -fsSL -o /tmp/chromedriver.zip "https://storage.googleapis.com/chrome-for-testing-public/${DRIVER_VERSION}/linux64/chromedriver-linux64.zip"
+          unzip -qo /tmp/chromedriver.zip -d /tmp
+          sudo mv /tmp/chromedriver-linux64/chromedriver /usr/local/bin/chromedriver
+          sudo chmod +x /usr/local/bin/chromedriver
+          echo "Chrome version: ${CHROME_VERSION}"
+          chromedriver --version
+
       - name: Prepare infra environment
         working-directory: infra
         run: |
@@ -52,7 +73,10 @@ jobs:
           exit 1
 
       - name: Run E2E tests
-        run: ./gradlew clean test aggregate -Dwebdriver.driver=chrome -Dheadless.mode=true -Dapp.base.url=http://localhost:3000
+        env:
+          CHROME_BIN: ${{ steps.setup-chrome.outputs.chrome-path }}
+          GOOGLE_CHROME_BIN: ${{ steps.setup-chrome.outputs.chrome-path }}
+        run: ./gradlew clean test aggregate -Dwebdriver.driver=chrome -Dwebdriver.chrome.driver=/usr/local/bin/chromedriver -Dheadless.mode=true -Dwebdriver.base.url=http://localhost:3000
 
       - name: Upload Serenity report
         if: always()
