@@ -1,122 +1,64 @@
-name: E2E POM Tests
+group = 'org.nahulemes'
+version = '1.0-SNAPSHOT'
 
-on:
-push:
-branches:
-- "**"
-workflow_dispatch:
+defaultTasks 'clean', 'test', 'aggregate'
 
-jobs:
-e2e-tests:
-runs-on: ubuntu-latest
-timeout-minutes: 30
+repositories {
+    mavenCentral()
+    mavenLocal()
+}
 
-steps:
-- name: Checkout automation repository
-uses: actions/checkout@v4
+buildscript {
+    repositories {
+        maven {
+            url = "https://plugins.gradle.org/m2/"
+        }
+    }
+    dependencies {
+        classpath "net.serenity-bdd:serenity-gradle-plugin:5.3.2"
+        classpath "net.serenity-bdd:serenity-single-page-report:5.3.2"
+    }
+}
 
-- name: Checkout infra repository
-uses: actions/checkout@v4
-        with:
-repository: equipo-6-uruguay/infra
-ref: main
-path: infra
 
-- name: Set up Java
-uses: actions/setup-java@v4
-        with:
-distribution: temurin
-java-version: "17"
-cache: gradle
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'idea'
+apply plugin: "net.serenity-bdd.serenity-gradle-plugin"
 
-- name: Install Google Chrome + matching ChromeDriver
-id: setup-chrome
-uses: browser-actions/setup-chrome@v2
-        with:
-chrome-version: stable
-install-chromedriver: true
-install-dependencies: true
+ext {
+    serenity_version = '5.3.2'
+    junit_platform_launcher_version="1.13.0"
+    cucumber_junit_platform_engine_version="7.34.2"
+    junit_platform_suite_version="6.0.3"
+    junit_jupiter_engine_version="6.0.3"
+    junit_vintage_engine_version="6.0.3"
+    logback_classic_version="1.5.18"
+    assertj_core_version="3.23.1"
+}
 
-- name: Show browser versions
-run: |
-echo "Chrome path: ${{ steps.setup-chrome.outputs.chrome-path }}"
-echo "ChromeDriver path: ${{ steps.setup-chrome.outputs.chromedriver-path }}"
-"${{ steps.setup-chrome.outputs.chrome-path }}" --version
-"${{ steps.setup-chrome.outputs.chromedriver-path }}" --version
+dependencies {
+    testImplementation "net.serenity-bdd:serenity-core:${serenity_version}"
+    testImplementation "net.serenity-bdd:serenity-cucumber:${serenity_version}"
+    testImplementation "net.serenity-bdd:serenity-screenplay:${serenity_version}"
+    testImplementation "net.serenity-bdd:serenity-screenplay-webdriver:${serenity_version}"
+    testImplementation "net.serenity-bdd:serenity-ensure:${serenity_version}"
+    testImplementation "org.junit.platform:junit-platform-launcher:${junit_platform_launcher_version}"
+    testImplementation "io.cucumber:cucumber-junit-platform-engine:${cucumber_junit_platform_engine_version}"
+    testImplementation "org.junit.platform:junit-platform-suite:${junit_platform_suite_version}"
+    testImplementation "org.junit.jupiter:junit-jupiter-engine:${junit_jupiter_engine_version}"
+    testImplementation "org.junit.vintage:junit-vintage-engine:${junit_vintage_engine_version}"
+    testRuntimeOnly "ch.qos.logback:logback-classic:${logback_classic_version}"
+    testImplementation "org.assertj:assertj-core:${assertj_core_version}"
+}
 
-- name: Debug Chrome and ChromeDriver
-env:
-CHROME_BIN: ${{ steps.setup-chrome.outputs.chrome-path }}
-GOOGLE_CHROME_BIN: ${{ steps.setup-chrome.outputs.chrome-path }}
-run: |
-echo "CHROME_BIN=$CHROME_BIN"
-echo "GOOGLE_CHROME_BIN=$GOOGLE_CHROME_BIN"
-which google-chrome || true
-which chromedriver || true
-"${{ steps.setup-chrome.outputs.chrome-path }}" --version || true
-"${{ steps.setup-chrome.outputs.chromedriver-path }}" --version || true
+test {
+    useJUnitPlatform()
+}
 
-- name: Smoke test Chrome headless
-run: |
-"${{ steps.setup-chrome.outputs.chrome-path }}" \
-            --headless=new \
-            --no-sandbox \
-            --disable-dev-shm-usage \
-            --disable-gpu \
-            --window-size=1920,1080 \
-            --dump-dom about:blank
+serenity {
+    reports = ["single-page-html"]
+}
+gradle.startParameter.continueOnFailure = true
 
-- name: Prepare infra environment
-working-directory: infra
-run: cp .env.example .env
-
-- name: Start application with Docker Compose
-working-directory: infra
-run: docker compose up -d
-
-- name: Wait for AUT on localhost:3000
-run: |
-for attempt in {1..36}; do
-if curl -fsS http://localhost:3000/ > /dev/null; then
-echo "AUT is available."
-exit 0
-fi
-echo "Waiting for AUT... (${attempt}/36)"
-sleep 5
-done
-echo "AUT did not become available at http://localhost:3000/"
-exit 1
-
-- name: Run E2E tests
-env:
-CHROME_BIN: ${{ steps.setup-chrome.outputs.chrome-path }}
-GOOGLE_CHROME_BIN: ${{ steps.setup-chrome.outputs.chrome-path }}
-run: |
-./gradlew clean test aggregate \
-            -Dwebdriver.driver=chrome \
-            -Dwebdriver.chrome.driver="${{ steps.setup-chrome.outputs.chromedriver-path }}" \
-            -Dchrome.binary="${{ steps.setup-chrome.outputs.chrome-path }}" \
-            -Dchrome.switches="--headless=new,--no-sandbox,--disable-dev-shm-usage,--disable-gpu,--window-size=1920,1080" \
-            -Dapp.base.url=http://localhost:3000 \
-            --stacktrace --info
-
-- name: Upload Serenity report
-if: always()
-uses: actions/upload-artifact@v4
-        with:
-name: serenity-report
-path: target/site/serenity
-if-no-files-found: warn
-
-- name: Upload Gradle test report
-if: always()
-uses: actions/upload-artifact@v4
-        with:
-name: gradle-test-report
-path: build/reports/tests/test
-if-no-files-found: warn
-
-- name: Stop Docker Compose services
-if: always()
-working-directory: infra
-run: docker compose down --remove-orphans
+test.finalizedBy(aggregate, reports)
