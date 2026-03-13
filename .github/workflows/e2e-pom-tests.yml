@@ -1,0 +1,63 @@
+name: E2E POM Tests
+
+on:
+  push:
+    branches:
+      - "**"
+  workflow_dispatch:
+
+jobs:
+  e2e-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+
+      - name: Start application with Docker Compose
+        run: |
+          if [ -f docker-compose.yml ] || [ -f docker-compose.yaml ]; then
+            docker compose up -d --build
+          else
+            echo "No docker-compose file found."
+            echo "Ensure the AUT is available at http://localhost:3000 during CI."
+          fi
+
+      - name: Wait for AUT on localhost:3000
+        run: |
+          for attempt in {1..36}; do
+            if curl -fsS http://localhost:3000/ > /dev/null; then
+              echo "AUT is available."
+              exit 0
+            fi
+            echo "Waiting for AUT... (${attempt}/36)"
+            sleep 5
+          done
+          echo "AUT did not become available at http://localhost:3000/"
+          exit 1
+
+      - name: Run E2E tests
+        run: ./gradlew clean test aggregate -Dwebdriver.driver=chrome -Dheadless.mode=true -Dwebdriver.base.url=http://localhost:3000
+
+      - name: Upload Serenity report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: serenity-report
+          path: target/site/serenity
+          if-no-files-found: warn
+
+      - name: Stop Docker Compose services
+        if: always()
+        run: |
+          if [ -f docker-compose.yml ] || [ -f docker-compose.yaml ]; then
+            docker compose down --remove-orphans
+          fi
