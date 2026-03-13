@@ -11,7 +11,7 @@ repositories {
 buildscript {
     repositories {
         maven {
-            url "https://plugins.gradle.org/m2/"
+            url = "https://plugins.gradle.org/m2/"
         }
     }
     dependencies {
@@ -33,25 +33,23 @@ ext {
     junit_platform_suite_version="6.0.3"
     junit_jupiter_engine_version="6.0.3"
     junit_vintage_engine_version="6.0.3"
-    logback_classic_version="1.2.10"
+    logback_classic_version="1.5.18"
     assertj_core_version="3.23.1"
 }
 
 dependencies {
-    dependencies {
-        testImplementation "net.serenity-bdd:serenity-core:${serenity_version}"
-        testImplementation "net.serenity-bdd:serenity-cucumber:${serenity_version}"
-        testImplementation "net.serenity-bdd:serenity-screenplay:${serenity_version}"
-        testImplementation "net.serenity-bdd:serenity-screenplay-webdriver:${serenity_version}"
-        testImplementation "net.serenity-bdd:serenity-ensure:${serenity_version}"
-        testImplementation "org.junit.platform:junit-platform-launcher:${junit_platform_launcher_version}"
-        testImplementation "io.cucumber:cucumber-junit-platform-engine:${cucumber_junit_platform_engine_version}"
-        testImplementation "org.junit.platform:junit-platform-suite:${junit_platform_suite_version}"
-        testImplementation "org.junit.jupiter:junit-jupiter-engine:${junit_jupiter_engine_version}"
-        testImplementation "org.junit.vintage:junit-vintage-engine:${junit_vintage_engine_version}"
-        implementation "ch.qos.logback:logback-classic:${logback_classic_version}"
-        testImplementation "org.assertj:assertj-core:${assertj_core_version}"
-    }
+    testImplementation "net.serenity-bdd:serenity-core:${serenity_version}"
+    testImplementation "net.serenity-bdd:serenity-cucumber:${serenity_version}"
+    testImplementation "net.serenity-bdd:serenity-screenplay:${serenity_version}"
+    testImplementation "net.serenity-bdd:serenity-screenplay-webdriver:${serenity_version}"
+    testImplementation "net.serenity-bdd:serenity-ensure:${serenity_version}"
+    testImplementation "org.junit.platform:junit-platform-launcher:${junit_platform_launcher_version}"
+    testImplementation "io.cucumber:cucumber-junit-platform-engine:${cucumber_junit_platform_engine_version}"
+    testImplementation "org.junit.platform:junit-platform-suite:${junit_platform_suite_version}"
+    testImplementation "org.junit.jupiter:junit-jupiter-engine:${junit_jupiter_engine_version}"
+    testImplementation "org.junit.vintage:junit-vintage-engine:${junit_vintage_engine_version}"
+    testRuntimeOnly "ch.qos.logback:logback-classic:${logback_classic_version}"
+    testImplementation "org.assertj:assertj-core:${assertj_core_version}"
 }
 
 test {
